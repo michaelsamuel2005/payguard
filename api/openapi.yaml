@@ -1,0 +1,331 @@
+openapi: 3.0.3
+info:
+  title: payguard
+  version: 0.1.0
+  description: |
+    A payments API that checks the payee's name and scam signals before money leaves.
+
+    Every call needs a bearer JWT. The token's `sub` is the customer (or reviewer); its `scope` claim decides what
+    the call may do: `payments` for a customer's own payees and payments, `reviews` for the review queue.
+    Errors are RFC 9457 problem details (`application/problem+json`).
+
+    A test (PaymentsApiTest) fails if this file and the controllers stop describing the same operations.
+servers:
+  - url: http://localhost:8080
+security:
+  - bearer: []
+tags:
+  - name: payees
+  - name: payments
+  - name: reviews
+paths:
+  /v1/payees:
+    post:
+      tags: [payees]
+      summary: Add a payee; the name is checked against the account first
+      description: |
+        The result travels with the payee. A close match returns the account holder's real name in `accountName`,
+        so the customer can correct a typo; a no-match returns no name.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterPayee' }
+      responses:
+        '201':
+          description: Created
+          headers:
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payee' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '401': { description: No valid token }
+        '403': { description: The token lacks the payments scope }
+        '409': { $ref: '#/components/responses/Problem' }
+    get:
+      tags: [payees]
+      summary: The customer's payees
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Payee' }
+        '401': { description: No valid token }
+        '403': { description: The token lacks the payments scope }
+  /v1/payees/{id}:
+    get:
+      tags: [payees]
+      summary: One of the customer's payees
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payee' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+  /v1/payments:
+    post:
+      tags: [payments]
+      summary: Start a payment
+      description: |
+        The payment is assessed and is then RELEASED (allowed), AWAITING_CONFIRMATION (warned: the customer must
+        acknowledge the warning) or HELD (for the review team).
+
+        Retrying with the same Idempotency-Key and body returns the original payment with status 200 and
+        `Idempotent-Replayed: true`; the same key with a different body is a 409.
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string, pattern: '^[A-Za-z0-9_-]{8,64}$' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/InitiatePayment' }
+      responses:
+        '200':
+          description: A replay of an earlier request with this key
+          headers:
+            Idempotent-Replayed: { schema: { type: string, enum: ['true'] } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '201':
+          description: Created
+          headers:
+            Location: { schema: { type: string } }
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+        '429':
+          description: Too many payment requests from this customer
+          headers:
+            Retry-After: { schema: { type: integer } }
+  /v1/payments/{id}:
+    get:
+      tags: [payments]
+      summary: One of the customer's payments
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '404': { $ref: '#/components/responses/Problem' }
+  /v1/payments/{id}/audit:
+    get:
+      tags: [payments]
+      summary: The payment's audit trail, oldest first
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AuditEntry' }
+        '404': { $ref: '#/components/responses/Problem' }
+  /v1/payments/{id}/confirm:
+    post:
+      tags: [payments]
+      summary: Release a warned payment by acknowledging the warning shown
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConfirmPayment' }
+      responses:
+        '200':
+          description: Released
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+  /v1/payments/{id}/cancel:
+    post:
+      tags: [payments]
+      summary: Cancel a payment that is awaiting confirmation or held
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: Cancelled
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+  /v1/reviews:
+    get:
+      tags: [reviews]
+      summary: Held payments, oldest first (scope reviews)
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Payment' }
+        '403': { description: The token lacks the reviews scope }
+  /v1/reviews/{id}:
+    post:
+      tags: [reviews]
+      summary: Approve or reject a held payment, with a reason (scope reviews)
+      description: The reviewer is the token's subject and may not be the payment's customer.
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReviewDecision' }
+      responses:
+        '200':
+          description: Decided
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Payment' }
+        '400': { $ref: '#/components/responses/Problem' }
+        '403': { $ref: '#/components/responses/Problem' }
+        '404': { $ref: '#/components/responses/Problem' }
+        '409': { $ref: '#/components/responses/Problem' }
+  /v1/reviews/{id}/audit:
+    get:
+      tags: [reviews]
+      summary: Any payment's audit trail (scope reviews)
+      parameters:
+        - $ref: '#/components/parameters/Id'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AuditEntry' }
+        '404': { $ref: '#/components/responses/Problem' }
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    Problem:
+      description: An RFC 9457 problem detail
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+  schemas:
+    RegisterPayee:
+      type: object
+      required: [name, sortCode, accountNumber]
+      properties:
+        name: { type: string, maxLength: 70, example: John Smith }
+        sortCode: { type: string, example: 12-34-56 }
+        accountNumber: { type: string, pattern: '^[0-9]{8}$', example: '12345678' }
+    Payee:
+      type: object
+      required: [id, name, sortCode, accountNumber, nameCheck, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        sortCode: { type: string, example: 12-34-56 }
+        accountNumber: { type: string, description: Masked, example: '****5678' }
+        nameCheck: { type: string, enum: [MATCH, CLOSE_MATCH, NO_MATCH, UNAVAILABLE] }
+        accountName: { type: string, description: The account holder's name; present only for a close match }
+        createdAt: { type: string, format: date-time }
+    InitiatePayment:
+      type: object
+      required: [payeeId, amountPence, reference]
+      properties:
+        payeeId: { type: string, format: uuid }
+        amountPence: { type: integer, format: int64, minimum: 1, example: 2500 }
+        reference: { type: string, pattern: '^[A-Za-z0-9 ./&-]{1,18}$', example: DINNER }
+    Payment:
+      type: object
+      required: [id, payeeId, amountPence, reference, status, outcome, riskScore, signals, createdAt, updatedAt]
+      properties:
+        id: { type: string, format: uuid }
+        payeeId: { type: string, format: uuid }
+        amountPence: { type: integer, format: int64 }
+        reference: { type: string }
+        status: { type: string, enum: [RELEASED, AWAITING_CONFIRMATION, HELD, REJECTED, CANCELLED] }
+        outcome: { type: string, enum: [ALLOW, WARN, HOLD] }
+        riskScore: { type: integer }
+        signals:
+          type: array
+          items:
+            type: string
+            enum: [NEW_PAYEE, NAME_CLOSE_MATCH, NAME_NO_MATCH, NAME_CHECK_UNAVAILABLE, UNUSUAL_AMOUNT, SCAM_LANGUAGE, RAPID_NEW_PAYEES]
+        warning: { $ref: '#/components/schemas/Warning' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    Warning:
+      type: object
+      description: Present unless the payment was allowed
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum: [SCAM_LANGUAGE, NAME_MISMATCH, NAME_CHECK_UNAVAILABLE, RAPID_NEW_PAYEES, LARGE_NEW_PAYEE, NAME_CLOSE_MATCH, UNUSUAL_AMOUNT, NEW_PAYEE]
+        message: { type: string }
+    ConfirmPayment:
+      type: object
+      required: [acknowledgedWarning]
+      properties:
+        acknowledgedWarning: { type: string, description: The code of the warning the customer was shown }
+    ReviewDecision:
+      type: object
+      required: [decision, reason]
+      properties:
+        decision: { type: string, enum: [APPROVE, REJECT] }
+        reason: { type: string, maxLength: 500 }
+    AuditEntry:
+      type: object
+      required: [actor, action, to, detail, at]
+      properties:
+        actor: { type: string }
+        action: { type: string, enum: [INITIATED, CONFIRMED, CANCELLED, APPROVED, REJECTED] }
+        from: { type: string, description: Absent for INITIATED }
+        to: { type: string }
+        detail: { type: string }
+        at: { type: string, format: date-time }
+    Problem:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string }

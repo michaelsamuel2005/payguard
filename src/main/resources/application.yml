@@ -1,0 +1,66 @@
+spring:
+  application:
+    name: payguard
+  datasource:
+    url: ${PAYGUARD_DB_URL:jdbc:postgresql://localhost:5432/payguard}
+    username: ${PAYGUARD_DB_USER:payguard}
+    password: ${PAYGUARD_DB_PASSWORD:payguard}
+  mvc:
+    problemdetails:
+      enabled: true
+  jackson:
+    default-property-inclusion: non_null
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+
+logging:
+  structured:
+    format:
+      console: ecs
+
+payguard:
+  directory:
+    timeout: 800ms
+    breaker-minimum-calls: 5
+    breaker-wait-in-open: 30s
+    failure-mode: none
+  rate-limit:
+    payments-per-minute: 20
+
+---
+# Local runs: tokens signed by scripts/DevToken.java, verified with its public key.
+spring:
+  config:
+    activate:
+      on-profile: dev
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          public-key-location: ${PAYGUARD_JWT_PUBLIC_KEY:file:.dev-keys/public.pem}
+
+---
+# Real deployments: tokens from the organisation's identity provider.
+spring:
+  config:
+    activate:
+      on-profile: prod
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${PAYGUARD_JWT_ISSUER}

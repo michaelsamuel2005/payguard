@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: payguard
+  labels:
+    app.kubernetes.io/name: payguard
+data:
+  SPRING_PROFILES_ACTIVE: prod
+  # The organisation's identity provider; payguard reads its signing keys from the issuer's metadata.
+  PAYGUARD_JWT_ISSUER: https://login.example.com/realms/payguard
+  PAYGUARD_DIRECTORY_TIMEOUT: 800ms             # payguard.directory.timeout
+  PAYGUARD_RATELIMIT_PAYMENTSPERMINUTE: "20"   # payguard.rate-limit.payments-per-minute

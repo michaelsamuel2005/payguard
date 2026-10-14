@@ -1,0 +1,21 @@
+# Only the API gateway and the metrics scraper may reach payguard.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: payguard-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: payguard
+  policyTypes: ["Ingress"]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/component: api-gateway
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: prometheus
+      ports:
+        - protocol: TCP
+          port: 8080

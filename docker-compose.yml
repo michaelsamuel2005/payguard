@@ -1,0 +1,31 @@
+# Local run: PostgreSQL plus payguard in the "dev" profile.
+#   java scripts/DevToken.java > /dev/null   # once: creates .dev-keys/
+#   docker compose up --build
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: payguard
+      POSTGRES_USER: payguard
+      POSTGRES_PASSWORD: payguard
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payguard -d payguard"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      PAYGUARD_DB_URL: jdbc:postgresql://db:5432/payguard
+      PAYGUARD_JWT_PUBLIC_KEY: file:/keys/public.pem
+    volumes:
+      - ./.dev-keys:/keys:ro
+    ports:
+      - "8080:8080"

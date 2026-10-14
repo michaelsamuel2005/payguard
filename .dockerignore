@@ -5,3 +5,4 @@ target
 deploy
 docs
 *.log
+ui-tests

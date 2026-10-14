@@ -36,6 +36,21 @@ The breaker has opened: the name directory is failing or slower than the timeout
 - **Do:** database unavailable: payguard reports not-ready and Kubernetes stops sending it traffic; it recovers
   when the database does.
 
+## The demo web page
+
+The page is static files inside the same application (`src/main/resources/static`), so it is up whenever the API is.
+
+- **Get sign-in links:** `bash scripts/demo-links.sh` prints one link for a customer and one for a reviewer
+  (`http://localhost:8080/#token=...`). Open it and the page signs in and removes the token from the address bar.
+  Tokens last an hour by default; a reload signs you out, on purpose.
+- **A blank page or "something went wrong" on every screen:** open the browser's developer console. A
+  Content-Security-Policy violation is named there (a script or style blocked). The policy is
+  `SecurityConfig.CONTENT_SECURITY_POLICY`; the page is written to need nothing outside it.
+- **The page loads, then every call is 401:** the token has expired or was signed with another key. Run
+  `bash scripts/demo-links.sh` again.
+- **Browser tests:** `cd ui-tests && npm ci && npx playwright install chromium && npm test`, with payguard running
+  (`PAYGUARD_URL`, default `http://localhost:8080`). `npm run test:unit` needs no running service and no browser.
+
 ## Useful queries
 
 ```sql

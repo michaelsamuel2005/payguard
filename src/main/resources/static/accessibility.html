@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="referrer" content="no-referrer">
+  <title>Accessibility – payguard</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="brand" href="./"><span class="brand__mark" aria-hidden="true">◆</span> payguard</a>
+    </div>
+    <p class="phase container"><strong class="phase__tag">Demo</strong>
+      Simulated money and fictional bank accounts. Not a bank.</p>
+  </header>
+
+  <main id="main" class="container" tabindex="-1">
+    <h1>Accessibility</h1>
+    <p class="lead">This page says how accessible the payguard demo is, what was checked, and what was not.</p>
+
+    <h2>What we aimed for</h2>
+    <p>The screens are built to meet the Web Content Accessibility Guidelines (WCAG) 2.2, level AA. This is a demo built by one person, so there has been no independent audit. Nobody can honestly say "fully accessible" from the checks below, and this page does not.</p>
+
+    <h2>What was checked</h2>
+    <p>The browser tests in the <code>ui-tests</code> folder run on every change. They check:</p>
+    <ul>
+      <li>An automated scan with axe-core of every screen, in light and in dark colour schemes, against the WCAG 2.0, 2.1 and 2.2 level A and AA rules. It reports no failures.</li>
+      <li>The whole payment journey, and the review journey, using only a keyboard. Every control can be reached and used, and the keyboard focus can be seen.</li>
+      <li>When one screen replaces another, keyboard focus moves to its main heading. When a form has mistakes, focus moves to a list of them, and each one links to its field.</li>
+      <li>No sideways scrolling on a screen 320 pixels wide, at text size 200%, or with wider spacing between letters, words and lines.</li>
+      <li>Every button, checkbox, radio button and text box is at least 24 by 24 pixels.</li>
+      <li>Each screen has a language, a different title, one main heading, headings in order, and labelled landmarks. Zooming is never blocked.</li>
+      <li>Every form field has a label, and hints and errors are tied to the field they belong to.</li>
+      <li>Nothing is told by colour alone. Every status has words as well.</li>
+    </ul>
+
+    <h2>What was not checked</h2>
+    <ul>
+      <li>Screen readers. The page uses the standard patterns for them (labelled fields, an error summary, a polite status message), but it has not been used with JAWS, NVDA, VoiceOver or TalkBack.</li>
+      <li>Voice control, switch devices, or screen magnifiers.</li>
+      <li>Any browser except Chromium.</li>
+      <li>Use by disabled people. No user research has been done.</li>
+    </ul>
+
+    <h2>Known problems</h2>
+    <ul>
+      <li>Signing in means pasting a long access token. That is allowed (pasting is never blocked), but it is not friendly. A real service would use its bank's own sign-in.</li>
+      <li>The review desk shows a payee's reference, not their name, because the API does not give a reviewer the name.</li>
+      <li>The list of held payments does not refresh by itself. Use "Refresh the list".</li>
+      <li>The list of a customer's payments is kept in the browser tab only, so it is lost on reload.</li>
+    </ul>
+
+    <h2>Tell us about a problem</h2>
+    <p>If something here does not work for you, open an issue on the project's repository and say what you were trying to do and what you use to browse. Include the screen and, if you can, your browser and any assistive technology.</p>
+    <p>This statement was prepared on 14 October 2026.</p>
+    <p><a class="btn" href="./">Open the demo</a></p>
+  </main>
+
+  <footer class="site-footer">
+    <nav class="container" aria-label="Footer">
+      <ul class="footer__list">
+        <li><a href="./">Back to the demo</a></li>
+        <li><a href="about.html">Try the demo</a></li>
+      </ul>
+    </nav>
+  </footer>
+</body>
+</html>

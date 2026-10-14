@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.michaelsamuel2005.payguard.adapters.directory.SimulatedAccountNameDirectory;
 import io.github.michaelsamuel2005.payguard.adapters.directory.SimulatedAccountNameDirectory.FailureMode;
 import io.github.michaelsamuel2005.payguard.adapters.resilience.ResilientAccountNameDirectory;
+import io.github.michaelsamuel2005.payguard.config.SecurityConfig;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -250,6 +251,41 @@ class PaymentsApiTest {
         mvc.perform(get("/v1/payees"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(header().exists(CorrelationIdFilter.HEADER));
+    }
+
+    @Test
+    void the_web_page_is_public_and_every_file_of_it_carries_the_security_headers() throws Exception {
+        for (String path : new String[] {"/index.html", "/about.html", "/accessibility.html", "/assets/app.js",
+                "/assets/app.css"}) {
+            mvc.perform(get(path))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Security-Policy", SecurityConfig.CONTENT_SECURITY_POLICY))
+                    .andExpect(header().string("Referrer-Policy", "no-referrer"))
+                    .andExpect(header().string("X-Content-Type-Options", "nosniff"))
+                    .andExpect(header().string("Permissions-Policy", containsString("camera=()")));
+        }
+    }
+
+    @Test
+    void only_the_listed_page_files_are_public_and_only_to_read() throws Exception {
+        mvc.perform(post("/index.html")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/not-a-page.html")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/assets/missing.js")).andExpect(status().isNotFound());
+        // The page files being public must not open anything of the API.
+        mvc.perform(get("/v1/payees")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/v1/reviews")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void the_page_files_contain_no_data_and_no_secrets() throws Exception {
+        String everything = "";
+        for (String path : new String[] {"/index.html", "/about.html", "/accessibility.html", "/assets/app.js",
+                "/assets/copy.js", "/assets/api.js", "/assets/format.js", "/assets/dom.js"}) {
+            everything += mvc.perform(get(path)).andExpect(status().isOk()).andReturn().getResponse()
+                    .getContentAsString();
+        }
+        assertThat(everything).doesNotContain("BEGIN PRIVATE KEY").doesNotContain("BEGIN PUBLIC KEY")
+                .doesNotContain("localStorage").doesNotContain("sessionStorage").doesNotContain("document.cookie");
     }
 
     @Test

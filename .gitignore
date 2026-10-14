@@ -6,3 +6,7 @@ target/
 *.iml
 .DS_Store
 __pycache__/
+node_modules/
+ui-tests/test-results/
+ui-tests/playwright-report/
+ui-tests/ui-report.json

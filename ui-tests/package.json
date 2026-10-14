@@ -1,0 +1,17 @@
+{
+  "name": "payguard-ui-tests",
+  "private": true,
+  "type": "module",
+  "description": "Tests for payguard's web page: unit tests for its pure code, and browser tests for every journey, accessibility, keyboard use, reflow and the security headers.",
+  "scripts": {
+    "test:unit": "node --test \"unit/*.test.mjs\"",
+    "test:e2e": "playwright test",
+    "test": "npm run test:unit && npm run test:e2e"
+  },
+  "engines": { "node": ">=22.7" },
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.56.0",
+    "yaml": "2.8.1"
+  }
+}

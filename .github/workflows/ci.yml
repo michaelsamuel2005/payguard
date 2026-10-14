@@ -60,7 +60,7 @@ jobs:
           if-no-files-found: ignore
 
   image:
-    name: Docker image and end-to-end smoke test
+    name: Docker image, smoke test and browser tests
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -80,8 +80,44 @@ jobs:
             sleep 2
           done
           echo "::error title=startup::payguard did not become healthy"; exit 1
-      - name: Smoke test
+      - name: Smoke test (also warms the JVM up, so the name check's 800 ms limit is not hit cold)
         run: bash scripts/smoke.sh
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ui-tests/package-lock.json
+      - name: Install the browser-test tools
+        working-directory: ui-tests
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+      - name: Page unit and contract tests
+        working-directory: ui-tests
+        run: npm run test:unit
+      - name: Browser tests (journeys, accessibility, keyboard, reflow, security headers)
+        working-directory: ui-tests
+        env:
+          CI: 'true'
+          PAYGUARD_URL: http://localhost:8080
+          PAYGUARD_E2E: real
+        run: npx playwright test
+      - name: Browser test summary
+        if: always()
+        run: python3 .github/scripts/ui_report.py --summary ui-tests/ui-report.json >> "$GITHUB_STEP_SUMMARY"
+      - name: Browser test annotations
+        if: failure()
+        run: python3 .github/scripts/ui_report.py --annotate ui-tests/ui-report.json
+      - name: Upload browser-test report and traces
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-test-report
+          path: |
+            ui-tests/playwright-report
+            ui-tests/test-results
+            ui-tests/ui-report.json
+          if-no-files-found: ignore
       - name: Application log on failure
         if: failure()
         run: docker compose logs --no-color app | tail -n 150

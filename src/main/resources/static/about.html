@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="referrer" content="no-referrer">
+  <title>Try the demo – payguard</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="brand" href="./"><span class="brand__mark" aria-hidden="true">◆</span> payguard</a>
+    </div>
+    <p class="phase container"><strong class="phase__tag">Demo</strong>
+      Simulated money and fictional bank accounts. Not a bank.</p>
+  </header>
+
+  <main id="main" class="container" tabindex="-1">
+    <h1>Try the demo</h1>
+    <p class="lead">payguard checks who you are paying, and looks for signs of a scam, before money leaves. Here is how to see each outcome.</p>
+
+    <h2>1. Sign in</h2>
+    <p>The page has no login of its own. It uses a signed access token, as it would with a real bank's identity provider. Run this in the project folder to get a link that signs you in:</p>
+    <pre class="code"><code>bash scripts/demo-links.sh</code></pre>
+    <p>It prints two links. The first signs you in as a customer. The second signs you in as a member of the review team. Open the second in a private window to be both people at once.</p>
+
+    <h2>2. Use these fictional accounts</h2>
+    <p>The demo's stand-in for the receiving banks knows these accounts, and no others. Every name, sort code and account number here is made up.</p>
+    <table>
+      <caption>Fictional accounts</caption>
+      <thead><tr><th scope="col">Name on the account</th><th scope="col">Sort code</th><th scope="col">Account number</th></tr></thead>
+      <tbody>
+        <tr><td>John Smith</td><td>12-34-56</td><td>12345678</td></tr>
+        <tr><td>Sarah O'Connor</td><td>12-34-56</td><td>87654321</td></tr>
+        <tr><td>Acme Trading Limited</td><td>20-30-40</td><td>11112222</td></tr>
+        <tr><td>Priya Patel</td><td>20-30-40</td><td>33334444</td></tr>
+        <tr><td>Greenfield Lettings Ltd</td><td>40-50-60</td><td>55556666</td></tr>
+        <tr><td>Alex Morgan</td><td>60-70-80</td><td>77778888</td></tr>
+        <tr><td>Daniel Hughes</td><td>60-70-80</td><td>99990000</td></tr>
+      </tbody>
+    </table>
+
+    <h2>3. Five things to try</h2>
+    <p>You can add each account once. To try one again, sign in as a different customer.</p>
+    <ol class="scenarios">
+      <li>
+        <h3>A usual payment</h3>
+        <p>Add John Smith, 12-34-56, 12345678. Pay £25.00 with the reference DINNER.</p>
+        <p><strong>You should see:</strong> the name matches, and the payment is sent straight away.</p>
+      </li>
+      <li>
+        <h3>A typo in the name</h3>
+        <p>Add Sara O'Connor, 12-34-56, 87654321. Pay £25.00 with the reference BOOKS.</p>
+        <p><strong>You should see:</strong> the name is close but not the same, and the real name on the account is shown. Then a warning asks you to confirm before the payment is sent.</p>
+      </li>
+      <li>
+        <h3>Scam wording</h3>
+        <p>Add John Smith again as a different customer. Pay £25.00 with the reference SAFE ACCOUNT.</p>
+        <p><strong>You should see:</strong> a warning that the reference looks like a common scam. You can cancel, or tick the box and send anyway.</p>
+      </li>
+      <li>
+        <h3>A large payment to someone new</h3>
+        <p>Add Greenfield Lettings Ltd, 40-50-60, 55556666. Pay £1,500.00 with the reference RENT.</p>
+        <p><strong>You should see:</strong> a warning that this is a large payment to someone new.</p>
+      </li>
+      <li>
+        <h3>A name that does not match</h3>
+        <p>Add Mike Jones, 20-30-40, 33334444. That account belongs to Priya Patel. Pay any amount.</p>
+        <p><strong>You should see:</strong> the name does not match, and the real name is not shown. The payment is held. Sign in as the reviewer, open the held payment, and approve or reject it with a reason. A reviewer cannot decide on their own payment.</p>
+      </li>
+    </ol>
+
+    <h2>How it decides</h2>
+    <p>Each warning sign adds points. The points are added up when you pay.</p>
+    <table>
+      <caption>Points for each warning sign</caption>
+      <thead><tr><th scope="col">Warning sign</th><th scope="col">Points</th></tr></thead>
+      <tbody>
+        <tr><td>First payment to this payee</td><td>1</td></tr>
+        <tr><td>The name is close to the name on the account</td><td>1</td></tr>
+        <tr><td>The name does not match the name on the account</td><td>3</td></tr>
+        <tr><td>The name could not be checked</td><td>2</td></tr>
+        <tr><td>Much larger than the customer's usual payments</td><td>2</td></tr>
+        <tr><td>The reference uses words common in scams</td><td>2</td></tr>
+        <tr><td>One of several payments to new payees in a short time</td><td>2</td></tr>
+      </tbody>
+    </table>
+    <p>0 or 1 points: the payment is sent. 2 or 3 points: the customer sees a warning and must confirm. 4 points or more: the payment is held for the review team. If the name could not be checked, the payment is never sent without a warning.</p>
+    <p>The points and limits are chosen by a written rule, and tested on simulated payments. Nothing here is tuned on real customers.</p>
+
+    <h2>What this demo is not</h2>
+    <p>It moves no money. The account directory is a made-up list. The access tokens are made on your own computer. The screens are tested for accessibility with automated checks and by keyboard, but not with screen readers. See the <a href="accessibility.html">accessibility statement</a> for what was and was not checked.</p>
+    <p><a class="btn" href="./">Open the demo</a></p>
+  </main>
+
+  <footer class="site-footer">
+    <nav class="container" aria-label="Footer">
+      <ul class="footer__list">
+        <li><a href="./">Back to the demo</a></li>
+        <li><a href="accessibility.html">Accessibility</a></li>
+      </ul>
+    </nav>
+  </footer>
+</body>
+</html>

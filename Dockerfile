@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # Build with Maven on JDK 21. Dependencies are their own layer, so a source change does not refetch them.
-FROM maven:3.9-eclipse-temurin-21 AS build
+FROM maven:3.9-eclipse-temurin-26 AS build
 WORKDIR /src
 COPY pom.xml .
 RUN mvn -B -q dependency:go-offline

@@ -9,7 +9,7 @@ COPY src ./src
 RUN mvn -B -q -DskipTests package && cp target/payguard-*.jar /payguard.jar
 
 # Run on the JRE only, as an unprivileged user.
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:25-jre
 RUN groupadd --system payguard && useradd --system --gid payguard --uid 10001 payguard
 WORKDIR /app
 COPY --from=build /payguard.jar /app/payguard.jar

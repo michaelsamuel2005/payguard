@@ -12,6 +12,6 @@
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
     "@playwright/test": "1.56.0",
-    "yaml": "2.8.1"
+    "yaml": "2.9.1"
   }
 }

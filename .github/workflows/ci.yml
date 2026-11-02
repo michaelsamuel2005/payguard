@@ -51,7 +51,7 @@ jobs:
         run: python3 .github/scripts/report.py --summary build.log target/surefire-reports >> "$GITHUB_STEP_SUMMARY"
       - name: Upload test reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: |
@@ -110,7 +110,7 @@ jobs:
         run: python3 .github/scripts/ui_report.py --annotate ui-tests/ui-report.json
       - name: Upload browser-test report and traces
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: browser-test-report
           path: |

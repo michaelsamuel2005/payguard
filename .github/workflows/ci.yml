@@ -82,7 +82,7 @@ jobs:
           echo "::error title=startup::payguard did not become healthy"; exit 1
       - name: Smoke test (also warms the JVM up, so the name check's 800 ms limit is not hit cold)
         run: bash scripts/smoke.sh
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
